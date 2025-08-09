@@ -2,6 +2,16 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import profAvatar from "@/assets/profai-avatar.png";
+import { supabase } from "@/integrations/supabase/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const NavItem = ({ to, label }: { to: string; label: string }) => (
   <NavLink
@@ -19,12 +29,44 @@ const NavItem = ({ to, label }: { to: string; label: string }) => (
 export default function MainLayout() {
   const { pathname } = useLocation();
   const [atTop, setAtTop] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const [displayName, setDisplayName] = useState<string>("");
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
 
   useEffect(() => {
     const onScroll = () => setAtTop(window.scrollY < 8);
     window.addEventListener("scroll", onScroll);
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    // Listen to auth changes and load profile
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_evt, session) => {
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) {
+        supabase.from("profiles").select("display_name, avatar_url").eq("id", u.id).maybeSingle().then(({ data }) => {
+          setDisplayName(data?.display_name || u.email?.split("@")[0] || "Account");
+          setAvatarUrl(data?.avatar_url || "");
+        });
+      } else {
+        setDisplayName("");
+        setAvatarUrl("");
+      }
+    });
+    // Initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) {
+        supabase.from("profiles").select("display_name, avatar_url").eq("id", u.id).maybeSingle().then(({ data }) => {
+          setDisplayName(data?.display_name || u.email?.split("@")[0] || "Account");
+          setAvatarUrl(data?.avatar_url || "");
+        });
+      }
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -52,8 +94,33 @@ export default function MainLayout() {
               <NavItem to="/settings" label="Settings" />
             </nav>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost"><Link to="/login">Log in</Link></Button>
-            <Button asChild><Link to="/signup">Start learning</Link></Button>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2">
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage src={avatarUrl || undefined} alt="User avatar" />
+                      <AvatarFallback>{(displayName || "U").charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <span className="hidden sm:inline">{displayName || "Account"}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Signed in</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings">Account settings</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => supabase.auth.signOut()}>Log out</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button asChild variant="ghost"><Link to="/login">Log in</Link></Button>
+                <Button asChild><Link to="/signup">Start learning</Link></Button>
+              </>
+            )}
           </div>
         </div>
       </header>
