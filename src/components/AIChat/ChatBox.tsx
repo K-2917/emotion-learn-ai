@@ -44,6 +44,26 @@ const lessonStructure = {
   summary: "Key takeaways and next steps",
 };
 
+// Simple topic detection
+function topicFromText(text: string) {
+  const t = text.toLowerCase();
+  if (t.includes("machine learning") || t.includes("ml")) return "ml" as const;
+  if (t.includes("data structure") || t.includes("linked list") || t.includes("tree") || t.includes("hash")) return "ds" as const;
+  if (t.includes("algorithm") || t.includes("big-o") || t.includes("complexity") || t.includes("sorting") || t.includes("search")) return "algorithms" as const;
+  if (t.includes("system design") || t.includes("scalability") || t.includes("architecture")) return "systems" as const;
+  if (t.includes("ai fundamentals") || t.includes("ai") || t.includes("artificial intelligence")) return "ai" as const;
+  return "general" as const;
+}
+
+const topicSnippets: Record<string, string> = {
+  ai: "Example: 'Contrast narrow vs general AI in 2 lines and list one real-world risk.'",
+  algorithms: "Example: 'Explain Big-O for binary search and include 5-line pseudocode.'",
+  ml: "Example: 'Split data into train/val/test, choose a metric, and explain why in 3 bullets.'",
+  ds: "Example: 'Choose between array vs linked list for many inserts; justify in 2 bullets.'",
+  systems: "Example: 'Sketch a URL shortener API: endpoints, data model, and scaling constraints.'",
+  general: "Example: 'State Role + Task + Constraints + Example for your tech topic in 4-6 lines.'",
+};
+
 function speakLesson(text: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const utter = new SpeechSynthesisUtterance(text);
@@ -61,7 +81,7 @@ export default function ChatBox({ demo = false }: { demo?: boolean }) {
     {
       role: "assistant",
       content:
-        "Hey, I’m ProfAI. Want quick, practical help with prompts? Pick a topic (clarity, constraints, role prompting), or paste your prompt and I’ll tighten it up with an example.",
+        "Hey, I'm ProfAI — your friendly professor for prompts and tech. I can teach AI fundamentals, algorithms, ML concepts, data structures, and more. Pick a topic below or paste your prompt and I'll tighten it up with a quick example.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -96,18 +116,22 @@ export default function ChatBox({ demo = false }: { demo?: boolean }) {
     return interactions > 0 && interactions % 3 === 0;
   }, [messages]);
 
-  const generateAssistantReply = (userText: string) => {
-    const mood = detectConfusionLevel(userText);
-    const baseIntro = mood === "confused"
-      ? "I hear that this feels tricky. Let's slow down and try a simpler angle."
+const generateAssistantReply = (userText: string) => {
+  const mood = detectConfusionLevel(userText);
+  const topic = topicFromText(userText);
+  const baseIntro =
+    mood === "confused"
+      ? "I hear this feels tricky—let’s slow down and try a simpler angle."
       : mood === "confident"
-      ? "Great! Since you're comfortable, let's push a bit further."
-      : "Great question. We'll build this up step-by-step.";
+      ? "Nice! Since you're comfortable, let's push a bit further."
+      : "Great question—let’s build this step-by-step.";
 
-    const content = `\n${baseIntro}\n\n1) ${lessonStructure.introduction}: Think of a prompt like giving directions to a friend—clear, specific, and with context.\n\n2) ${lessonStructure.explanation}: Try using Role + Task + Constraints + Examples. For instance: \\"You are a meticulous editor. Improve clarity of the paragraph below using bullet points, keeping the original meaning.\\"\n\n3) ${lessonStructure.checkUnderstanding}: How would you structure a prompt for summarizing a long article for a beginner?\n\n4) ${lessonStructure.practice}: Write a prompt using Role + Task + Constraints for a topic you care about.\n\n5) ${lessonStructure.summary}: Clear structure + concrete constraints = reliable outputs. You're doing great—want to try another example?`;
+  const example = topicSnippets[topic];
 
-    return content + "\n\n" + (mood === "confused" ? "Does this simpler framing help?" : "Does this make sense so far?");
-  };
+  const content = `\n${baseIntro}\n\n1) ${lessonStructure.introduction}: A good prompt is like directions to a friend—clear, specific, and with context.\n\n2) ${lessonStructure.explanation}: Use Role + Task + Constraints + Example. ${example}\n\n3) ${lessonStructure.checkUnderstanding}: In 1–2 lines, how would you structure a prompt for this topic?\n\n4) ${lessonStructure.practice}: Write your prompt now using Role + Task + Constraints.\n\n5) ${lessonStructure.summary}: Structure + concrete constraints = reliable outputs. You're doing great—want to try another example?`;
+
+  return content + "\n\n" + (mood === "confused" ? "Does this simpler framing help?" : "Does this make sense so far?");
+};
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -171,6 +195,27 @@ export default function ChatBox({ demo = false }: { demo?: boolean }) {
             </div>
           </div>
         )}
+        
+        <div className="rounded-md border p-3">
+          <p className="text-sm mb-2">Quick topics</p>
+          <div className="flex flex-wrap gap-2">
+            {["AI fundamentals", "Algorithms", "Machine Learning", "Data Structures", "System Design"].map((label) => (
+              <Button
+                key={label}
+                variant="secondary"
+                onClick={() => {
+                  const text = `Teach me ${label.toLowerCase()}.`;
+                  setMessages((prev) => [...prev, { role: "user", content: text }]);
+                  const reply = generateAssistantReply(text);
+                  setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+                  if (speaking) speakLesson(reply);
+                }}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+        </div>
 
         <form onSubmit={onSubmit} className="flex items-center gap-2">
           <Input
