@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import CodeViewer from "@/components/CodeViewer";
 import AssignmentRunner from "@/components/AssignmentRunner";
+import ChatBox from "@/components/AIChat/ChatBox";
 import { lessonsByCourse } from "@/data/lessons";
 import { courses } from "@/data/courses";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,6 +105,7 @@ export default function LessonDetail() {
           />
         </section>
         <aside className="md:col-span-1 space-y-4">
+          <ChatBox courseTopic={course.topic as any} />
           <CodeViewer title="Code Window" language={language} code={code || (lesson.sampleCode || "")} />
         </aside>
       </article>
