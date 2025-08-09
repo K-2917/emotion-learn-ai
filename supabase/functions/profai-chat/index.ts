@@ -56,6 +56,7 @@ serve(async (req) => {
 
     if (!resp.ok) {
       const errText = await resp.text();
+      console.error("profai-chat: Perplexity API error", resp.status, errText);
       return new Response(JSON.stringify({ error: "Perplexity error", detail: errText }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -69,6 +70,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
+    console.error("profai-chat: unexpected error", e?.message || e);
     return new Response(JSON.stringify({ error: e?.message || "Unknown error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

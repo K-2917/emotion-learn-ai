@@ -162,6 +162,8 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
         setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
         if (speaking) speakLesson(reply, personas[persona].voice);
       } catch (err: any) {
+        console.error("profai-chat playground error:", err);
+        toast({ title: "AI service error", description: err?.message || "Using a local tip instead.", variant: "destructive" });
         const reply = generateAssistantReply(text);
         setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
         if (speaking) speakLesson(reply, personas[persona].voice);
@@ -172,33 +174,32 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
     return () => window.removeEventListener("profai:playground-send", handler as EventListener);
   }, [speaking, persona]);
 
-const emotionPrompt = useMemo(() => {
-  const interactions = messages.filter((m) => m.role === "user").length;
-  return interactions > 0 && interactions % 3 === 0;
-}, [messages]);
+  const emotionPrompt = useMemo(() => {
+    const interactions = messages.filter((m) => m.role === "user").length;
+    return interactions > 0 && interactions % 3 === 0;
+  }, [messages]);
 
-const currentTopic = useMemo<TopicKey>(() => {
-  const lastUser = [...messages].reverse().find((m) => m.role === "user");
-  return lastUser ? topicFromText(lastUser.content) : (courseTopic || "general");
-}, [messages, courseTopic]);
+  const currentTopic = useMemo<TopicKey>(() => {
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    return lastUser ? topicFromText(lastUser.content) : (courseTopic || "general");
+  }, [messages, courseTopic]);
 
+  const generateAssistantReply = (userText: string) => {
+    const mood = detectConfusionLevel(userText);
+    const topic = topicFromText(userText);
+    const baseIntro =
+      mood === "confused"
+        ? "I hear this feels tricky—let’s slow down and try a simpler angle."
+        : mood === "confident"
+        ? "Nice! Since you're comfortable, let's push a bit further."
+        : "Great question—let’s build this step-by-step.";
 
-const generateAssistantReply = (userText: string) => {
-  const mood = detectConfusionLevel(userText);
-  const topic = topicFromText(userText);
-  const baseIntro =
-    mood === "confused"
-      ? "I hear this feels tricky—let’s slow down and try a simpler angle."
-      : mood === "confident"
-      ? "Nice! Since you're comfortable, let's push a bit further."
-      : "Great question—let’s build this step-by-step.";
+    const example = topicSnippets[topic];
 
-  const example = topicSnippets[topic];
+    const content = `\n${baseIntro}\n\n1) ${lessonStructure.introduction}: A good prompt is like directions to a friend—clear, specific, and with context.\n\n2) ${lessonStructure.explanation}: Use Role + Task + Constraints + Example. ${example}\n\n3) ${lessonStructure.checkUnderstanding}: In 1–2 lines, how would you structure a prompt for this topic?\n\n4) ${lessonStructure.practice}: Write your prompt now using Role + Task + Constraints.\n\n5) ${lessonStructure.summary}: Structure + concrete constraints = reliable outputs. You're doing great—want to try another example?`;
 
-  const content = `\n${baseIntro}\n\n1) ${lessonStructure.introduction}: A good prompt is like directions to a friend—clear, specific, and with context.\n\n2) ${lessonStructure.explanation}: Use Role + Task + Constraints + Example. ${example}\n\n3) ${lessonStructure.checkUnderstanding}: In 1–2 lines, how would you structure a prompt for this topic?\n\n4) ${lessonStructure.practice}: Write your prompt now using Role + Task + Constraints.\n\n5) ${lessonStructure.summary}: Structure + concrete constraints = reliable outputs. You're doing great—want to try another example?`;
-
-  return content + "\n\n" + (mood === "confused" ? "Does this simpler framing help?" : "Does this make sense so far?");
-};
+    return content + "\n\n" + (mood === "confused" ? "Does this simpler framing help?" : "Does this make sense so far?");
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -216,6 +217,8 @@ const generateAssistantReply = (userText: string) => {
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
       if (speaking) speakLesson(reply, personas[persona].voice);
     } catch (err: any) {
+      console.error("profai-chat submit error:", err);
+      toast({ title: "AI service error", description: err?.message || "Using a local tip instead.", variant: "destructive" });
       const reply = generateAssistantReply(text);
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
       if (speaking) speakLesson(reply, personas[persona].voice);
@@ -311,7 +314,7 @@ const generateAssistantReply = (userText: string) => {
         <div className="rounded-md border p-3">
           <p className="text-sm mb-2">Quick topics</p>
           <div className="flex flex-wrap gap-2">
-            {(["AI fundamentals", "Algorithms", "Machine Learning", "Data Structures", "System Design"]).map((label) => (
+            {["AI fundamentals", "Algorithms", "Machine Learning", "Data Structures", "System Design"].map((label) => (
               <Button
                 key={label}
                 variant="secondary"
@@ -327,6 +330,8 @@ const generateAssistantReply = (userText: string) => {
                     setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
                     if (speaking) speakLesson(reply, personas[persona].voice);
                   } catch (err: any) {
+                    console.error("profai-chat quick-topic error:", err);
+                    toast({ title: "AI service error", description: err?.message || "Using a local tip instead.", variant: "destructive" });
                     const reply = generateAssistantReply(text);
                     setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
                     if (speaking) speakLesson(reply, personas[persona].voice);
