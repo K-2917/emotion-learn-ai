@@ -9,7 +9,8 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
-import Lesson from "./pages/Lesson";
+import CourseLessons from "./pages/CourseLessons";
+import LessonDetail from "./pages/LessonDetail";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import MainLayout from "./layouts/MainLayout";
@@ -33,7 +34,8 @@ const App = () => (
               <Route path="/signup" element={<Signup />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/lesson/:id" element={<Lesson />} />
+              <Route path="/courses/:slug/lessons" element={<CourseLessons />} />
+              <Route path="/courses/:slug/lessons/:lessonSlug" element={<LessonDetail />} />
               <Route path="/courses" element={<Courses />} />
               <Route path="/courses/:slug" element={<CourseDetail />} />
               <Route path="/analytics" element={<Analytics />} />

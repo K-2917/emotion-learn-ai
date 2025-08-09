@@ -74,7 +74,7 @@ export default function CourseDetail() {
     }
 
     toast({ title: "Enrolled!", description: "Redirecting to lesson…" });
-    navigate(`/lesson/${course.slug}`);
+    navigate(`/courses/${course.slug}/lessons`);
     setLoading(false);
   };
 
