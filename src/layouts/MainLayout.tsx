@@ -32,6 +32,7 @@ export default function MainLayout() {
   const [user, setUser] = useState<any>(null);
   const [displayName, setDisplayName] = useState<string>("");
   const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const [resumePath, setResumePath] = useState<string | null>(null);
 
   useEffect(() => {
     const onScroll = () => setAtTop(window.scrollY < 8);
@@ -74,6 +75,28 @@ export default function MainLayout() {
     if (pathname === "/") document.title = "ProfAI – AI Professor Platform";
   }, [pathname]);
 
+  useEffect(() => {
+    try {
+      let latest: { slug: string; lessonSlug: string; t: number } | null = null;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith("progress:")) continue;
+        const parts = k.split(":");
+        if (parts.length < 3) continue;
+        const slug = parts[1];
+        const lessonSlug = parts[2];
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        try {
+          const data = JSON.parse(raw);
+          const t = typeof data?.t === "number" ? data.t : 0;
+          if (!latest || t > latest.t) latest = { slug, lessonSlug, t };
+        } catch {}
+      }
+      setResumePath(latest ? `/courses/${latest.slug}/lessons/${latest.lessonSlug}` : null);
+    } catch {}
+  }, [pathname]);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header
@@ -89,7 +112,7 @@ export default function MainLayout() {
             <nav className="hidden md:flex items-center gap-1">
               <NavItem to="/dashboard" label="Dashboard" />
               <NavItem to="/courses" label="Courses" />
-              
+              {resumePath && <NavItem to={resumePath} label="Resume" />}
               <NavItem to="/analytics" label="Analytics" />
               <NavItem to="/settings" label="Settings" />
             </nav>
