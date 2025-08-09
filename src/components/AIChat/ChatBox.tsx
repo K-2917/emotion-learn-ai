@@ -163,8 +163,8 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
         if (speaking) speakLesson(reply, personas[persona].voice);
       } catch (err: any) {
         console.error("profai-chat playground error:", err);
-        toast({ title: "AI service error", description: err?.message || "Using a local tip instead.", variant: "destructive" });
-        const reply = generateAssistantReply(text);
+        toast({ title: "AI service error", description: err?.message || "Please try again.", variant: "destructive" });
+        const reply = "Sorry, I couldn't generate a response right now.";
         setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
         if (speaking) speakLesson(reply, personas[persona].voice);
       }
@@ -218,8 +218,8 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
       if (speaking) speakLesson(reply, personas[persona].voice);
     } catch (err: any) {
       console.error("profai-chat submit error:", err);
-      toast({ title: "AI service error", description: err?.message || "Using a local tip instead.", variant: "destructive" });
-      const reply = generateAssistantReply(text);
+      toast({ title: "AI service error", description: err?.message || "Please try again.", variant: "destructive" });
+      const reply = "Sorry, I couldn't generate a response right now.";
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
       if (speaking) speakLesson(reply, personas[persona].voice);
     } finally {
@@ -331,8 +331,8 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
                     if (speaking) speakLesson(reply, personas[persona].voice);
                   } catch (err: any) {
                     console.error("profai-chat quick-topic error:", err);
-                    toast({ title: "AI service error", description: err?.message || "Using a local tip instead.", variant: "destructive" });
-                    const reply = generateAssistantReply(text);
+                    toast({ title: "AI service error", description: err?.message || "Please try again.", variant: "destructive" });
+                    const reply = "Sorry, I couldn't generate a response right now.";
                     setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
                     if (speaking) speakLesson(reply, personas[persona].voice);
                   }
