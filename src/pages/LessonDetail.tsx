@@ -120,7 +120,7 @@ export default function LessonDetail() {
               <p className="text-sm text-foreground/70 mb-4">{lesson.description}</p>
               <div className="space-y-3">
                 <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ask ProfAI about this lesson (e.g., 'Teach me binary search')" />
-                <Button onClick={generate} disabled={loading}>{loading ? "Generating…" : "Generate theory + code"}</Button>
+                <Button onClick={generate} disabled={loading} className="relative overflow-hidden btn-ripple">{loading ? "Generating…" : "Generate theory + code"}</Button>
               </div>
             </CardContent>
           </Card>

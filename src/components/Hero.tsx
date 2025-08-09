@@ -24,10 +24,10 @@ export default function Hero() {
             and celebrating your progress like a favorite teacher.
           </p>
           <div className="mt-8 flex gap-3">
-            <Button asChild>
+            <Button asChild className="relative overflow-hidden btn-ripple">
               <Link to="/signup" aria-label="Start the free course">Start free course</Link>
             </Button>
-            <Button asChild variant="secondary">
+            <Button asChild variant="secondary" className="relative overflow-hidden btn-ripple">
               <a href="#demo" aria-label="Watch a demo lesson">Watch demo</a>
             </Button>
           </div>

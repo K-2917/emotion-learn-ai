@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import avatarMentor from "@/assets/profai-avatar-mentor.png";
 import avatarAnalyst from "@/assets/profai-avatar-analyst.png";
 import avatarCoach from "@/assets/profai-avatar-coach.png";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PROFESSOR_SYSTEM_PROMPT = `
 You are ProfAI, a friendly, relatable professor who teaches AI fundamentals, algorithms, ML concepts, data structures, systems, and practical prompt engineering.
@@ -311,6 +312,16 @@ const generateAssistantReply = async (userText: string) => {
               </button>
             ))}
           </div>
+          {generating && (
+            <div className="mb-3 text-left">
+              <div className="inline-block rounded-lg px-3 py-2 bg-secondary">
+                <div className="space-y-2 w-56">
+                  <Skeleton className="h-3 w-5/6" />
+                  <Skeleton className="h-3 w-2/3" />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -413,11 +424,13 @@ const generateAssistantReply = async (userText: string) => {
         <form onSubmit={onSubmit} className="flex items-center gap-2">
           <Input
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => setInput(e.target.value)
+            }
             placeholder="Ask ProfAI anything across AI, ML, algorithms, data structures, or systems…"
             aria-label="Your message to ProfAI"
+            disabled={generating}
           />
-          <Button type="submit" aria-label="Send message" className="hover-scale">
+          <Button type="submit" aria-label="Send message" className="hover-scale relative overflow-hidden btn-ripple" disabled={generating}>
             <Send className="h-4 w-4" />
           </Button>
         </form>

@@ -80,7 +80,7 @@ export default function CourseLessons() {
       <main>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {lessons.map((l) => (
-            <Card key={l.slug} className="animate-fade-in hover-scale">
+            <Card key={l.slug} className="animate-fade-in hover-scale shadow-sm transition-shadow hover:shadow-md">
               <CardHeader>
                 <CardTitle>{l.title}</CardTitle>
               </CardHeader>

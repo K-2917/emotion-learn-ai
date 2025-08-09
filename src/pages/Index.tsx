@@ -41,7 +41,7 @@ export default function Index() {
       </section>
 
       {!isAuthed && (
-        <section className="container py-12">
+        <section id="demo" className="container py-12">
           <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-4">Try a Demo Lesson</h2>
           <p className="text-foreground/80 mb-6 max-w-2xl">
             Ask ProfAI a question and experience the hybrid teaching style—explanations plus immediate practice. You have 5 free prompts.
