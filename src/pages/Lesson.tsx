@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import ChatBox from "@/components/AIChat/ChatBox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import CodePlayground from "@/components/CodePlayground";
 
 export default function Lesson() {
   return (
@@ -30,6 +31,12 @@ export default function Lesson() {
               </ul>
             </CardContent>
           </Card>
+
+          <CodePlayground
+            title="Hands-on: Improve this prompt"
+            language="markdown"
+            initialValue={`Role: You are an expert tutor.\nTask: Rewrite the prompt to be clearer and more constrained.\nConstraints: Tone: friendly, Length: 5-7 sentences, Audience: beginners.\nExample:\n- Before: "Explain prompt engineering."\n- After: "As a mentor, outline Role+Task+Constraints+Examples for prompt engineering with a short example."`}
+          />
         </section>
         <aside className="md:col-span-1">
           <ChatBox />
