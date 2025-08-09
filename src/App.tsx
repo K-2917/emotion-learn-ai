@@ -14,6 +14,8 @@ import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import MainLayout from "./layouts/MainLayout";
 import Onboarding from "./pages/Onboarding";
+import Courses from "./pages/Courses";
+import CourseDetail from "./pages/CourseDetail";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,8 @@ const App = () => (
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/lesson/:id" element={<Lesson />} />
+              <Route path="/courses" element={<Courses />} />
+              <Route path="/courses/:slug" element={<CourseDetail />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/settings" element={<Settings />} />
             </Route>

@@ -44,12 +44,13 @@ export default function MainLayout() {
             <img src={profAvatar} alt="ProfAI friendly AI professor avatar" className="h-8 w-8 rounded-full" />
             <span className="font-semibold">ProfAI</span>
           </Link>
-          <nav className="hidden md:flex items-center gap-1">
-            <NavItem to="/dashboard" label="Dashboard" />
-            <NavItem to="/lesson/intro" label="Lesson" />
-            <NavItem to="/analytics" label="Analytics" />
-            <NavItem to="/settings" label="Settings" />
-          </nav>
+            <nav className="hidden md:flex items-center gap-1">
+              <NavItem to="/dashboard" label="Dashboard" />
+              <NavItem to="/courses" label="Courses" />
+              <NavItem to="/lesson/intro" label="Lesson" />
+              <NavItem to="/analytics" label="Analytics" />
+              <NavItem to="/settings" label="Settings" />
+            </nav>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost"><Link to="/login">Log in</Link></Button>
             <Button asChild><Link to="/signup">Start learning</Link></Button>

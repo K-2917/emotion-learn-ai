@@ -7,6 +7,9 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { Volume2, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import avatarMentor from "@/assets/profai-avatar-mentor.png";
+import avatarAnalyst from "@/assets/profai-avatar-analyst.png";
+import avatarCoach from "@/assets/profai-avatar-coach.png";
 
 const PROFESSOR_SYSTEM_PROMPT = `
 You are ProfAI, a friendly, relatable professor who teaches AI fundamentals, algorithms, ML concepts, data structures, systems, and practical prompt engineering.
@@ -98,19 +101,32 @@ const topicResources: Record<string, { title: string; url: string }[]> = {
   ],
 };
 
-function speakLesson(text: string) {
+function speakLesson(text: string, voicePref?: "female" | "male" | "neutral") {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const utter = new SpeechSynthesisUtterance(text);
   utter.rate = 0.9;
   const voices = window.speechSynthesis.getVoices();
-  const preferred = voices.find((v) => v.name.toLowerCase().includes("female")) || voices[0];
+  let preferred: SpeechSynthesisVoice | undefined;
+  if (voicePref === "female") preferred = voices.find((v) => /(samantha|victoria|female|zira|lucy)/i.test(v.name));
+  if (voicePref === "male") preferred = voices.find((v) => /(alex|daniel|male|fred|george|david)/i.test(v.name));
+  preferred = preferred || voices[0];
   if (preferred) utter.voice = preferred;
   window.speechSynthesis.speak(utter);
 }
 
 interface Message { role: "user" | "assistant"; content: string }
 
-export default function ChatBox({ demo = false }: { demo?: boolean }) {
+type TopicKey = "ai" | "algorithms" | "ml" | "ds" | "systems" | "general";
+
+type PersonaKey = "mentor" | "analyst" | "coach";
+
+const personas: Record<PersonaKey, { name: string; avatar: string; voice: "female" | "male" | "neutral" }> = {
+  mentor: { name: "Dr. Mentor", avatar: avatarMentor, voice: "female" },
+  analyst: { name: "Alex Analyst", avatar: avatarAnalyst, voice: "male" },
+  coach: { name: "Coach Riley", avatar: avatarCoach, voice: "neutral" },
+};
+
+export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean; courseTopic?: TopicKey }) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -122,6 +138,7 @@ export default function ChatBox({ demo = false }: { demo?: boolean }) {
   const [speaking, setSpeaking] = useState(true);
   const [webRefs, setWebRefs] = useState<{ title: string; url: string }[] | null>(null);
   const [loadingRefs, setLoadingRefs] = useState(false);
+  const [persona, setPersona] = useState<PersonaKey>("mentor");
   const listRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -138,7 +155,7 @@ export default function ChatBox({ demo = false }: { demo?: boolean }) {
         const next = [...prev, { role: "user", content: text } as Message]
         const reply = generateAssistantReply(text)
         const withReply = [...next, { role: "assistant", content: reply } as Message]
-        if (speaking) speakLesson(reply)
+        if (speaking) speakLesson(reply, personas[persona].voice)
         return withReply
       })
       toast({ title: "Sent from playground", description: "ProfAI replied in the chat." })
@@ -152,10 +169,11 @@ const emotionPrompt = useMemo(() => {
   return interactions > 0 && interactions % 3 === 0;
 }, [messages]);
 
-const currentTopic = useMemo(() => {
+const currentTopic = useMemo<TopicKey>(() => {
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
-  return lastUser ? topicFromText(lastUser.content) : "general";
-}, [messages]);
+  return lastUser ? topicFromText(lastUser.content) : (courseTopic || "general");
+}, [messages, courseTopic]);
+
 
 const generateAssistantReply = (userText: string) => {
   const mood = detectConfusionLevel(userText);
@@ -183,7 +201,7 @@ const generateAssistantReply = (userText: string) => {
     const withReply = [...next, { role: "assistant", content: reply } as Message];
     setMessages(withReply);
     setInput("");
-    if (speaking) speakLesson(reply);
+    if (speaking) speakLesson(reply, personas[persona].voice);
   };
 
   const loadWebRefs = async () => {
@@ -207,9 +225,24 @@ const generateAssistantReply = (userText: string) => {
   return (
     <Card id="profai-chat" className="border-border animate-fade-in">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Volume2 className="h-5 w-5 text-primary" aria-hidden /> ProfAI
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <img src={personas[persona].avatar} alt={`${personas[persona].name} avatar`} className="h-6 w-6 rounded-full" />
+            {personas[persona].name}
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            {(["mentor","analyst","coach"] as PersonaKey[]).map((key) => (
+              <button
+                key={key}
+                aria-label={`Switch to ${personas[key].name}`}
+                className={`rounded-full border p-[2px] ${persona === key ? "ring-2 ring-primary" : "opacity-80 hover:opacity-100"}`}
+                onClick={() => setPersona(key)}
+              >
+                <img src={personas[key].avatar} alt={`Avatar ${key}`} className="h-7 w-7 rounded-full" />
+              </button>
+            ))}
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div
@@ -245,7 +278,7 @@ const generateAssistantReply = (userText: string) => {
                     setMessages((prev) => [...prev, { role: "user", content: tag }]);
                     const reply = generateAssistantReply(tag);
                     setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-                    if (speaking) speakLesson(reply);
+                    if (speaking) speakLesson(reply, personas[persona].voice);
                   }}
                 >
                   {mood}
@@ -258,7 +291,7 @@ const generateAssistantReply = (userText: string) => {
         <div className="rounded-md border p-3">
           <p className="text-sm mb-2">Quick topics</p>
           <div className="flex flex-wrap gap-2">
-            {["AI fundamentals", "Algorithms", "Machine Learning", "Data Structures", "System Design"].map((label) => (
+            {(["AI fundamentals", "Algorithms", "Machine Learning", "Data Structures", "System Design"]).map((label) => (
               <Button
                 key={label}
                 variant="secondary"
@@ -267,7 +300,7 @@ const generateAssistantReply = (userText: string) => {
                   setMessages((prev) => [...prev, { role: "user", content: text }]);
                   const reply = generateAssistantReply(text);
                   setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-                  if (speaking) speakLesson(reply);
+                  if (speaking) speakLesson(reply, personas[persona].voice);
                 }}
               >
                 {label}
@@ -311,7 +344,7 @@ const generateAssistantReply = (userText: string) => {
             placeholder="Ask ProfAI anything across AI, ML, algorithms, data structures, or systems…"
             aria-label="Your message to ProfAI"
           />
-          <Button type="submit" aria-label="Send message">
+          <Button type="submit" aria-label="Send message" className="hover-scale">
             <Send className="h-4 w-4" />
           </Button>
         </form>
