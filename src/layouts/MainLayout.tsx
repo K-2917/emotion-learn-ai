@@ -89,7 +89,7 @@ export default function MainLayout() {
             <nav className="hidden md:flex items-center gap-1">
               <NavItem to="/dashboard" label="Dashboard" />
               <NavItem to="/courses" label="Courses" />
-              <NavItem to="/lesson/intro" label="Lesson" />
+              
               <NavItem to="/analytics" label="Analytics" />
               <NavItem to="/settings" label="Settings" />
             </nav>

@@ -11,6 +11,8 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import CourseLessons from "./pages/CourseLessons";
 import LessonDetail from "./pages/LessonDetail";
+import RedirectLegacyLesson from "./pages/RedirectLegacyLesson";
+import RedirectLegacyLessonDetail from "./pages/RedirectLegacyLessonDetail";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import MainLayout from "./layouts/MainLayout";
@@ -41,6 +43,8 @@ const App = () => (
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
+            <Route path="/lesson/:id" element={<RedirectLegacyLesson />} />
+            <Route path="/lesson/:id/:lesson" element={<RedirectLegacyLessonDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
