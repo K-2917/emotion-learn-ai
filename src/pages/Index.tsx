@@ -3,8 +3,12 @@ import ChatBox from "@/components/AIChat/ChatBox";
 import { Helmet } from "react-helmet-async";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Index() {
+  const [isAuthed, setIsAuthed] = useState(false);
+  useEffect(() => { supabase.auth.getSession().then(({ data: { session } }) => setIsAuthed(!!session?.user)); }, []);
   return (
     <>
       <Helmet>
@@ -36,13 +40,15 @@ export default function Index() {
         </div>
       </section>
 
-      <section className="container py-12">
-        <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-4">Try a Demo Lesson</h2>
-        <p className="text-foreground/80 mb-6 max-w-2xl">
-          Ask ProfAI a question and experience the hybrid teaching style—explanations plus immediate practice.
-        </p>
-        <ChatBox demo />
-      </section>
+      {!isAuthed && (
+        <section className="container py-12">
+          <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-4">Try a Demo Lesson</h2>
+          <p className="text-foreground/80 mb-6 max-w-2xl">
+            Ask ProfAI a question and experience the hybrid teaching style—explanations plus immediate practice. You have 5 free prompts.
+          </p>
+          <ChatBox demo maxUserMessages={5} />
+        </section>
+      )}
     </>
   );
 }

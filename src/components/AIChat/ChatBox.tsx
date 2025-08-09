@@ -163,7 +163,7 @@ const personas: Record<PersonaKey, { name: string; avatar: string; voice: "femal
   coach: { name: "Coach Riley", avatar: avatarCoach, voice: "neutral" },
 };
 
-export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean; courseTopic?: TopicKey }) {
+export default function ChatBox({ demo = false, courseTopic, maxUserMessages }: { demo?: boolean; courseTopic?: TopicKey; maxUserMessages?: number }) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -179,7 +179,15 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
   const [loadingRefs, setLoadingRefs] = useState(false);
   const [persona, setPersona] = useState<PersonaKey>("mentor");
   const [generating, setGenerating] = useState(false);
+  const [demoCount, setDemoCount] = useState<number>(0);
   const listRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (demo && maxUserMessages) {
+      const saved = parseInt((() => { try { return localStorage.getItem('demo_prompt_count') || '0'; } catch { return '0'; } })(), 10);
+      if (!Number.isNaN(saved)) setDemoCount(saved);
+    }
+  }, [demo, maxUserMessages]);
 
   useEffect(() => {
     listRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth" });
@@ -191,6 +199,15 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
       const ce = e as CustomEvent<{ content?: string }>;
       const text = ce.detail?.content?.trim();
       if (!text) return;
+      if (demo && maxUserMessages && demoCount >= maxUserMessages) {
+        toast({ title: "Demo limit reached", description: "Create an account to continue chatting." });
+        return;
+      }
+      if (demo && maxUserMessages) {
+        const next = demoCount + 1;
+        setDemoCount(next);
+        try { localStorage.setItem('demo_prompt_count', String(next)); } catch {}
+      }
       setMessages((prev) => [...prev, { role: "user", content: text }]);
       setGenerating(true);
       const reply = await generateAssistantReply(text);
@@ -201,7 +218,7 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
     };
     window.addEventListener("profai:playground-send", handler as EventListener);
     return () => window.removeEventListener("profai:playground-send", handler as EventListener);
-  }, [speaking, persona]);
+  }, [speaking, persona, demo, maxUserMessages, demoCount]);
 
   const emotionPrompt = useMemo(() => {
     const interactions = messages.filter((m) => m.role === "user").length;
@@ -221,6 +238,15 @@ const generateAssistantReply = async (userText: string) => {
     e.preventDefault();
     const text = input.trim();
     if (!text) return;
+    if (demo && maxUserMessages && demoCount >= maxUserMessages) {
+      toast({ title: "Demo limit reached", description: "Sign up to keep learning with ProfAI." });
+      return;
+    }
+    if (demo && maxUserMessages) {
+      const next = demoCount + 1;
+      setDemoCount(next);
+      try { localStorage.setItem('demo_prompt_count', String(next)); } catch {}
+    }
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setInput("");
 
