@@ -2,3 +2,6 @@ project_id = "gtvbnbgskkttvphdjmmb"
 
 [functions.perplexity-links]
 verify_jwt = false
+
+[functions.profai-chat]
+verify_jwt = false

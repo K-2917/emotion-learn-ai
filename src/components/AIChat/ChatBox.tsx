@@ -139,6 +139,7 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
   const [webRefs, setWebRefs] = useState<{ title: string; url: string }[] | null>(null);
   const [loadingRefs, setLoadingRefs] = useState(false);
   const [persona, setPersona] = useState<PersonaKey>("mentor");
+  const [generating, setGenerating] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -147,22 +148,29 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
 
   // Accept prompts sent from the playground and reply immediately
   useEffect(() => {
-    const handler = (e: Event) => {
-      const ce = e as CustomEvent<{ content?: string }>
-      const text = ce.detail?.content?.trim()
-      if (!text) return
-      setMessages((prev) => {
-        const next = [...prev, { role: "user", content: text } as Message]
-        const reply = generateAssistantReply(text)
-        const withReply = [...next, { role: "assistant", content: reply } as Message]
-        if (speaking) speakLesson(reply, personas[persona].voice)
-        return withReply
-      })
-      toast({ title: "Sent from playground", description: "ProfAI replied in the chat." })
-    }
-    window.addEventListener("profai:playground-send", handler as EventListener)
-    return () => window.removeEventListener("profai:playground-send", handler as EventListener)
-  }, [speaking])
+    const handler = async (e: Event) => {
+      const ce = e as CustomEvent<{ content?: string }>;
+      const text = ce.detail?.content?.trim();
+      if (!text) return;
+      setMessages((prev) => [...prev, { role: "user", content: text }]);
+      try {
+        const { data, error } = await supabase.functions.invoke("profai-chat", {
+          body: { message: text, topic: topicFromText(text), persona },
+        });
+        if (error) throw error;
+        const reply = (data as any)?.reply || generateAssistantReply(text);
+        setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+        if (speaking) speakLesson(reply, personas[persona].voice);
+      } catch (err: any) {
+        const reply = generateAssistantReply(text);
+        setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+        if (speaking) speakLesson(reply, personas[persona].voice);
+      }
+      toast({ title: "Sent from playground", description: "ProfAI replied in the chat." });
+    };
+    window.addEventListener("profai:playground-send", handler as EventListener);
+    return () => window.removeEventListener("profai:playground-send", handler as EventListener);
+  }, [speaking, persona]);
 
 const emotionPrompt = useMemo(() => {
   const interactions = messages.filter((m) => m.role === "user").length;
@@ -192,16 +200,28 @@ const generateAssistantReply = (userText: string) => {
   return content + "\n\n" + (mood === "confused" ? "Does this simpler framing help?" : "Does this make sense so far?");
 };
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = input.trim();
     if (!text) return;
-    const next = [...messages, { role: "user", content: text } as Message];
-    const reply = generateAssistantReply(text);
-    const withReply = [...next, { role: "assistant", content: reply } as Message];
-    setMessages(withReply);
+    setMessages((prev) => [...prev, { role: "user", content: text }]);
     setInput("");
-    if (speaking) speakLesson(reply, personas[persona].voice);
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("profai-chat", {
+        body: { message: text, topic: currentTopic, persona },
+      });
+      if (error) throw error;
+      const reply = (data as any)?.reply || generateAssistantReply(text);
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      if (speaking) speakLesson(reply, personas[persona].voice);
+    } catch (err: any) {
+      const reply = generateAssistantReply(text);
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      if (speaking) speakLesson(reply, personas[persona].voice);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const loadWebRefs = async () => {
@@ -295,12 +315,22 @@ const generateAssistantReply = (userText: string) => {
               <Button
                 key={label}
                 variant="secondary"
-                onClick={() => {
+                onClick={async () => {
                   const text = `Teach me ${label.toLowerCase()}.`;
                   setMessages((prev) => [...prev, { role: "user", content: text }]);
-                  const reply = generateAssistantReply(text);
-                  setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-                  if (speaking) speakLesson(reply, personas[persona].voice);
+                  try {
+                    const { data, error } = await supabase.functions.invoke("profai-chat", {
+                      body: { message: text, topic: topicFromText(text), persona },
+                    });
+                    if (error) throw error;
+                    const reply = (data as any)?.reply || generateAssistantReply(text);
+                    setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+                    if (speaking) speakLesson(reply, personas[persona].voice);
+                  } catch (err: any) {
+                    const reply = generateAssistantReply(text);
+                    setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+                    if (speaking) speakLesson(reply, personas[persona].voice);
+                  }
                 }}
               >
                 {label}
