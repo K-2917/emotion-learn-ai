@@ -2,6 +2,7 @@ import { useState } from "react";
 import Editor from "@monaco-editor/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 
 interface CodePlaygroundProps {
   title?: string;
@@ -20,6 +21,7 @@ export default function CodePlayground({
 }: CodePlaygroundProps) {
   const [code, setCode] = useState<string>(initialValue);
   const [resetKey, setResetKey] = useState<number>(0);
+  const { toast } = useToast();
 
   const handleReset = () => {
     setCode(initialValue);
@@ -34,13 +36,26 @@ export default function CodePlayground({
     }
   };
 
+  const handleSendToProfAI = async () => {
+    try {
+      window.dispatchEvent(
+        new CustomEvent("profai:playground-send", { detail: { content: code } })
+      );
+      toast({ title: "Sent to ProfAI", description: "Your prompt was sent to the chat below." });
+      await navigator.clipboard.writeText(code);
+    } catch (e) {
+      console.error("Send failed", e);
+    }
+  };
+
   return (
-    <Card>
+    <Card className="animate-fade-in">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle className="text-lg">{title}</CardTitle>
         <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={handleReset}>Reset</Button>
-          <Button type="button" onClick={handleCopy}>Copy</Button>
+          <Button type="button" variant="outline" onClick={handleReset} className="hover-scale">Reset</Button>
+          <Button type="button" variant="secondary" onClick={handleSendToProfAI} className="hover-scale">Ask ProfAI</Button>
+          <Button type="button" onClick={handleCopy} className="hover-scale">Copy</Button>
         </div>
       </CardHeader>
       <CardContent>

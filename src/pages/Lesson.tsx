@@ -14,7 +14,7 @@ export default function Lesson() {
 
       <article className="grid gap-6 md:grid-cols-3">
         <section className="md:col-span-2 space-y-4">
-          <Card>
+          <Card className="animate-fade-in">
             <CardHeader>
               <CardTitle>Prompt Clarity and Structure</CardTitle>
             </CardHeader>
@@ -29,6 +29,23 @@ export default function Lesson() {
                 <li>Add constraints (tone, length, audience)</li>
                 <li>Include examples when helpful</li>
               </ul>
+            </CardContent>
+          </Card>
+
+          <Card className="animate-fade-in">
+            <CardHeader>
+              <CardTitle>How to use the playground with ProfAI</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <ol className="list-decimal pl-5 space-y-1">
+                <li>Type or edit the prompt in the editor below.</li>
+                <li>Click “Ask ProfAI” to send it straight to the chat on the right.</li>
+                <li>Review ProfAI’s feedback and iterate in the editor—repeat quickly.</li>
+              </ol>
+              <p>
+                Tip: You can also copy your prompt and paste it into the chat. Jump to chat:
+                <a href="#profai-chat" className="story-link ml-1">Go to ProfAI</a>
+              </p>
             </CardContent>
           </Card>
 

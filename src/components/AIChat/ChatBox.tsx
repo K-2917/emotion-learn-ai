@@ -8,25 +8,22 @@ import { toast } from "@/hooks/use-toast";
 import { Volume2, Send } from "lucide-react";
 
 const PROFESSOR_SYSTEM_PROMPT = `
-You are ProfAI, an encouraging MIT-style AI professor specializing in prompt engineering.
+You are ProfAI, a friendly, relatable professor who teaches prompt engineering.
 
 PERSONALITY:
-- Encouraging and patient, like a favorite teacher
-- Breaks down complex concepts into simple analogies
-- Celebrates small wins and progress
-- Adapts explanations when sensing confusion
+- Warm, upbeat, and practical; talk like a helpful mentor
+- Use real-life analogies (maps, recipes, checklists) and keep it concise
+- Give direct, actionable next steps and celebrate small wins
 
 TEACHING STYLE:
-- Use the Socratic method - ask guiding questions
-- Provide concrete examples and real-world applications  
-- Check understanding frequently ("Does this make sense so far?")
-- Offer multiple explanation approaches if needed
+- Mix short explanations with tiny, concrete examples
+- Ask 1 quick check-for-understanding question
+- Offer a next action the student can take immediately
 
 EMOTION AWARENESS:
-- Watch for signs of confusion in user responses
-- If user says "I don't understand" → simplify and use different approach
-- If user seems confident → add more challenging questions
-- Always end with encouragement and next steps
+- If confused → simplify, give a 1–2 line example
+- If confident → add a small challenge or variation
+- Always end with encouragement + one next step
 `;
 
 function detectConfusionLevel(userMessage: string) {
@@ -64,7 +61,7 @@ export default function ChatBox({ demo = false }: { demo?: boolean }) {
     {
       role: "assistant",
       content:
-        "I'm ProfAI. What aspect of prompt engineering are you curious about today? We can start with clarity, constraints, or role prompting.",
+        "Hey, I’m ProfAI. Want quick, practical help with prompts? Pick a topic (clarity, constraints, role prompting), or paste your prompt and I’ll tighten it up with an example.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -74,6 +71,25 @@ export default function ChatBox({ demo = false }: { demo?: boolean }) {
   useEffect(() => {
     listRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
+
+  // Accept prompts sent from the playground and reply immediately
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ce = e as CustomEvent<{ content?: string }>
+      const text = ce.detail?.content?.trim()
+      if (!text) return
+      setMessages((prev) => {
+        const next = [...prev, { role: "user", content: text } as Message]
+        const reply = generateAssistantReply(text)
+        const withReply = [...next, { role: "assistant", content: reply } as Message]
+        if (speaking) speakLesson(reply)
+        return withReply
+      })
+      toast({ title: "Sent from playground", description: "ProfAI replied in the chat." })
+    }
+    window.addEventListener("profai:playground-send", handler as EventListener)
+    return () => window.removeEventListener("profai:playground-send", handler as EventListener)
+  }, [speaking])
 
   const emotionPrompt = useMemo(() => {
     const interactions = messages.filter((m) => m.role === "user").length;
@@ -106,10 +122,10 @@ export default function ChatBox({ demo = false }: { demo?: boolean }) {
   };
 
   return (
-    <Card id="demo" className="border-border">
+    <Card id="profai-chat" className="border-border animate-fade-in">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Volume2 className="h-5 w-5 text-primary" aria-hidden /> ProfAI Demo Chat
+          <Volume2 className="h-5 w-5 text-primary" aria-hidden /> ProfAI
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
