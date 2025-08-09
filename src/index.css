@@ -95,11 +95,32 @@ All colors MUST be HSL.
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground font-sans; }
+}
 
-  body {
-    @apply bg-background text-foreground font-sans;
+@layer components {
+  /* Subtle center ripple for all shadcn Buttons via btn-ripple class */
+  .btn-ripple::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 20px;
+    height: 20px;
+    border-radius: 9999px;
+    background: hsl(var(--ring) / 0.25);
+    transform: translate(-50%, -50%) scale(0);
+    pointer-events: none;
+  }
+  .btn-ripple:active::after {
+    animation: btn-ripple 500ms ease-out forwards;
+  }
+}
+
+@keyframes btn-ripple {
+  to {
+    transform: translate(-50%, -50%) scale(12);
+    opacity: 0;
   }
 }
