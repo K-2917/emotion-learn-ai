@@ -114,6 +114,22 @@ function speakLesson(text: string, voicePref?: "female" | "male" | "neutral") {
   window.speechSynthesis.speak(utter);
 }
 
+// Centralized AI reply helper – uses the Gemini-backed edge function
+async function getAIReply(message: string): Promise<string> {
+  try {
+    const { data, error } = await supabase.functions.invoke("profai-chat", {
+      body: { message },
+    });
+    if (error) throw error;
+    const reply = (data as any)?.reply;
+    return typeof reply === "string" && reply.trim()
+      ? reply
+      : "Sorry, I couldn't generate a response right now.";
+  } catch (e) {
+    return "Sorry, I couldn't generate a response right now.";
+  }
+}
+
 interface Message { role: "user" | "assistant"; content: string }
 
 type TopicKey = "ai" | "algorithms" | "ml" | "ds" | "systems" | "general";
@@ -153,10 +169,12 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
       const text = ce.detail?.content?.trim();
       if (!text) return;
       setMessages((prev) => [...prev, { role: "user", content: text }]);
-      const reply = generateAssistantReply(text);
+      setGenerating(true);
+      const reply = await generateAssistantReply(text);
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
       if (speaking) speakLesson(reply, personas[persona].voice);
       toast({ title: "Sent from playground", description: "ProfAI replied in the chat." });
+      setGenerating(false);
     };
     window.addEventListener("profai:playground-send", handler as EventListener);
     return () => window.removeEventListener("profai:playground-send", handler as EventListener);
@@ -172,22 +190,9 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
     return lastUser ? topicFromText(lastUser.content) : (courseTopic || "general");
   }, [messages, courseTopic]);
 
-  const generateAssistantReply = (userText: string) => {
-    const mood = detectConfusionLevel(userText);
-    const topic = topicFromText(userText);
-    const baseIntro =
-      mood === "confused"
-        ? "I hear this feels tricky—let’s slow down and try a simpler angle."
-        : mood === "confident"
-        ? "Nice! Since you're comfortable, let's push a bit further."
-        : "Great question—let’s build this step-by-step.";
-
-    const example = topicSnippets[topic];
-
-    const content = `\n${baseIntro}\n\n1) ${lessonStructure.introduction}: A good prompt is like directions to a friend—clear, specific, and with context.\n\n2) ${lessonStructure.explanation}: Use Role + Task + Constraints + Example. ${example}\n\n3) ${lessonStructure.checkUnderstanding}: In 1–2 lines, how would you structure a prompt for this topic?\n\n4) ${lessonStructure.practice}: Write your prompt now using Role + Task + Constraints.\n\n5) ${lessonStructure.summary}: Structure + concrete constraints = reliable outputs. You're doing great—want to try another example?`;
-
-    return content + "\n\n" + (mood === "confused" ? "Does this simpler framing help?" : "Does this make sense so far?");
-  };
+const generateAssistantReply = async (userText: string) => {
+  return await getAIReply(userText);
+};
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,7 +218,7 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
     }
 
     setGenerating(true);
-    const reply = generateAssistantReply(text);
+    const reply = await generateAssistantReply(text);
     setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     if (speaking) speakLesson(reply, personas[persona].voice);
     setGenerating(false);
@@ -288,12 +293,14 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
                 <Button
                   key={mood}
                   variant={mood === "confident" ? "default" : "secondary"}
-                  onClick={() => {
+                  onClick={async () => {
                     const tag = `I'm feeling ${mood}.`;
                     setMessages((prev) => [...prev, { role: "user", content: tag }]);
-                    const reply = generateAssistantReply(tag);
+                    setGenerating(true);
+                    const reply = await generateAssistantReply(tag);
                     setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
                     if (speaking) speakLesson(reply, personas[persona].voice);
+                    setGenerating(false);
                   }}
                 >
                   {mood}
@@ -310,12 +317,14 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
               <Button
                 key={label}
                 variant="secondary"
-                onClick={async () => {
+                  onClick={async () => {
                   const text = `Teach me ${label.toLowerCase()}.`;
                   setMessages((prev) => [...prev, { role: "user", content: text }]);
-                  const reply = generateAssistantReply(text);
+                  setGenerating(true);
+                  const reply = await generateAssistantReply(text);
                   setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
                   if (speaking) speakLesson(reply, personas[persona].voice);
+                  setGenerating(false);
                 }}
               >
                 {label}
