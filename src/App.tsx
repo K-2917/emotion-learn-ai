@@ -13,6 +13,7 @@ import Lesson from "./pages/Lesson";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import MainLayout from "./layouts/MainLayout";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/lesson/:id" element={<Lesson />} />
               <Route path="/analytics" element={<Analytics />} />
