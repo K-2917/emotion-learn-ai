@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { useParams, Link } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,6 +52,32 @@ export default function LessonDetail() {
       toast({ title: "Could not generate content", description: e?.message || "Try again", variant: "destructive" });
     } finally { setLoading(false); }
   };
+
+  // Persist and restore progress
+  useEffect(() => {
+    if (!slug || !lessonSlug) return;
+    try {
+      const saved = localStorage.getItem(`progress:${slug}:${lessonSlug}`);
+      if (saved) {
+        const s = JSON.parse(saved);
+        if (typeof s.prompt === "string") setPrompt(s.prompt);
+        if (typeof s.theory === "string") setTheory(s.theory);
+        if (typeof s.code === "string") setCode(s.code);
+        if (typeof s.language === "string") setLanguage(s.language);
+        toast({ title: "Resumed lesson", description: "Your previous progress was restored." });
+      }
+    } catch {}
+    // Always mark last visited lesson
+    try { localStorage.setItem(`lastLesson:${slug}`, lessonSlug); } catch {}
+  }, [slug, lessonSlug]);
+
+  useEffect(() => {
+    if (!slug || !lessonSlug) return;
+    try {
+      const payload = JSON.stringify({ prompt, theory, code, language, t: Date.now() });
+      localStorage.setItem(`progress:${slug}:${lessonSlug}`, payload);
+    } catch {}
+  }, [prompt, theory, code, language, slug, lessonSlug]);
 
   if (!course || !lesson) {
     return (
