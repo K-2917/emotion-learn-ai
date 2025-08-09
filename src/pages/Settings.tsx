@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge as BadgePill } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -18,6 +19,16 @@ export default function Settings() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Badges state
+  const [badges, setBadges] = useState<{
+    id: string;
+    name: string;
+    description: string | null;
+    icon: string | null;
+    earned_at: string;
+  }[]>([]);
+  const [loadingBadges, setLoadingBadges] = useState(false);
 
   useEffect(() => {
     const storedTts = localStorage.getItem("pref_tts");
@@ -48,6 +59,41 @@ export default function Settings() {
     })();
   }, []);
 
+  // Load badges when we know the user
+  useEffect(() => {
+    if (!userId) return;
+    (async () => {
+      try {
+        setLoadingBadges(true);
+        const { data: ub, error: ubErr } = await supabase
+          .from("user_badges")
+          .select("badge_id, earned_at")
+          .eq("user_id", userId)
+          .order("earned_at", { ascending: false });
+        if (ubErr) throw ubErr;
+        const ids = (ub || []).map((r) => r.badge_id);
+        if (ids.length === 0) { setBadges([]); return; }
+        const { data: bd, error: bErr } = await supabase
+          .from("badges")
+          .select("id, name, description, icon")
+          .in("id", ids);
+        if (bErr) throw bErr;
+        const merged = ids
+          .map((id) => {
+            const meta = bd?.find((b) => b.id === id);
+            const earned = ub?.find((u) => u.badge_id === id)?.earned_at || new Date().toISOString();
+            return meta ? { id, name: meta.name, description: meta.description || null, icon: meta.icon || null, earned_at: earned } : null;
+          })
+          .filter(Boolean) as any[];
+        setBadges(merged);
+      } catch (e: any) {
+        console.warn("Load badges failed", e);
+      } finally {
+        setLoadingBadges(false);
+      }
+    })();
+  }, [userId]);
+
   const saveAccount = async () => {
     if (!userId) return;
     setSaving(true);
@@ -77,6 +123,21 @@ export default function Settings() {
     else {
       setAvatarUrl(publicUrl);
       toast({ title: "Avatar updated" });
+    }
+  };
+
+  const shareBadge = async (b: { name: string }) => {
+    const shareText = `I just earned the "${b.name}" badge on ProfAI!`;
+    const shareUrl = window.location.origin;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'My ProfAI Badge', text: shareText, url: shareUrl });
+      } else {
+        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}&via=ProfAI`;
+        window.open(url, '_blank');
+      }
+    } catch {
+      /* no-op */
     }
   };
 
@@ -131,6 +192,42 @@ export default function Settings() {
               <Label htmlFor="dark">Dark mode</Label>
               <Switch id="dark" checked={dark} onCheckedChange={setDark} />
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Achievements / Badges */}
+      <div className="mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Achievements</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingBadges ? (
+              <p className="text-sm text-muted-foreground">Loading your badges…</p>
+            ) : badges.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No badges yet — try sending your first prompt or request feedback to get started.</p>
+            ) : (
+              <ul className="space-y-3">
+                {badges.map((b) => (
+                  <li key={b.id} className="flex items-center justify-between gap-3 rounded-md border p-3 bg-card/70">
+                    <div className="flex items-center gap-3">
+                      <span aria-hidden>{b.icon || "🏅"}</span>
+                      <div>
+                        <div className="font-medium">{b.name}</div>
+                        {b.description ? (
+                          <div className="text-xs text-muted-foreground">{b.description}</div>
+                        ) : null}
+                        <div className="mt-1">
+                          <BadgePill variant="secondary">Earned {new Date(b.earned_at).toLocaleDateString()}</BadgePill>
+                        </div>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="secondary" onClick={() => shareBadge(b)}>Share</Button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </div>

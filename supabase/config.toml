@@ -1,6 +1,6 @@
 project_id = "gtvbnbgskkttvphdjmmb"
 
-[functions.perplexity-links]
+[functions.gemini-links]
 verify_jwt = false
 
 [functions.profai-chat]

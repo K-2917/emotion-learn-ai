@@ -69,7 +69,8 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			fontFamily: {
-				sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+				sans: ['Montserrat', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+				montserrat: ['Montserrat', 'ui-sans-serif', 'system-ui', 'sans-serif'],
 				serif: ['"Source Serif 4"', 'ui-serif', 'Georgia', 'serif']
 			},
 			keyframes: {

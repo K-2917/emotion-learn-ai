@@ -223,7 +223,7 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
     try {
       setLoadingRefs(true);
       setWebRefs(null);
-      const { data, error } = await supabase.functions.invoke("perplexity-links", {
+      const { data, error } = await supabase.functions.invoke("gemini-links", {
         body: { topic: currentTopic },
       });
       if (error) throw error;
