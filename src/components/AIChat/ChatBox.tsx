@@ -102,16 +102,37 @@ const topicResources: Record<string, { title: string; url: string }[]> = {
 };
 
 function speakLesson(text: string, voicePref?: "female" | "male" | "neutral") {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = 0.9;
-  const voices = window.speechSynthesis.getVoices();
-  let preferred: SpeechSynthesisVoice | undefined;
-  if (voicePref === "female") preferred = voices.find((v) => /(samantha|victoria|female|zira|lucy)/i.test(v.name));
-  if (voicePref === "male") preferred = voices.find((v) => /(alex|daniel|male|fred|george|david)/i.test(v.name));
-  preferred = preferred || voices[0];
-  if (preferred) utter.voice = preferred;
-  window.speechSynthesis.speak(utter);
+  try {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 0.9;
+      const useVoices = () => {
+        const voices = window.speechSynthesis.getVoices();
+        let preferred: SpeechSynthesisVoice | undefined;
+        if (voicePref === "female") preferred = voices.find((v) => /(samantha|victoria|female|zira|lucy)/i.test(v.name));
+        if (voicePref === "male") preferred = voices.find((v) => /(alex|daniel|male|fred|george|david)/i.test(v.name));
+        if (preferred) utter.voice = preferred;
+        window.speechSynthesis.speak(utter);
+      };
+      if (window.speechSynthesis.getVoices().length === 0) {
+        window.speechSynthesis.onvoiceschanged = () => useVoices();
+        setTimeout(useVoices, 500);
+      } else {
+        useVoices();
+      }
+      return;
+    }
+  } catch (_) {}
+  // Fallback via Supabase Edge TTS (mp3)
+  supabase.functions
+    .invoke("tts", { body: { text, voice: voicePref } })
+    .then(({ data }: any) => {
+      const b64 = data?.audioContent;
+      if (!b64) return;
+      const audio = new Audio(`data:audio/mp3;base64,${b64}`);
+      audio.play().catch(() => {});
+    })
+    .catch(() => {});
 }
 
 // Centralized AI reply helper – uses the Gemini-backed edge function
@@ -151,7 +172,9 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
     },
   ]);
   const [input, setInput] = useState("");
-  const [speaking, setSpeaking] = useState(true);
+  const [speaking, setSpeaking] = useState<boolean>(() => {
+    try { return localStorage.getItem("pref_tts") !== "0"; } catch { return true; }
+  });
   const [webRefs, setWebRefs] = useState<{ title: string; url: string }[] | null>(null);
   const [loadingRefs, setLoadingRefs] = useState(false);
   const [persona, setPersona] = useState<PersonaKey>("mentor");
@@ -374,7 +397,7 @@ const generateAssistantReply = async (userText: string) => {
         </form>
 
         <div className="flex items-center gap-3">
-          <Switch id="speak" checked={speaking} onCheckedChange={setSpeaking} />
+          <Switch id="speak" checked={speaking} onCheckedChange={(v) => { setSpeaking(v); try { localStorage.setItem("pref_tts", v ? "1" : "0"); } catch {} }} />
           <Label htmlFor="speak">Speak responses</Label>
           <Button
             type="button"

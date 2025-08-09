@@ -9,6 +9,7 @@ import { Badge as BadgePill } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import CertificateModal from "@/components/CertificateModal";
 
 export default function Settings() {
   const [tts, setTts] = useState(true);
@@ -29,6 +30,8 @@ export default function Settings() {
     earned_at: string;
   }[]>([]);
   const [loadingBadges, setLoadingBadges] = useState(false);
+  const [certOpen, setCertOpen] = useState(false);
+  const [certBadge, setCertBadge] = useState<any>(null);
 
   useEffect(() => {
     const storedTts = localStorage.getItem("pref_tts");
@@ -223,7 +226,10 @@ export default function Settings() {
                         </div>
                       </div>
                     </div>
-                    <Button size="sm" variant="secondary" onClick={() => shareBadge(b)}>Share</Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="secondary" onClick={() => { setCertBadge(b); setCertOpen(true); }}>Certificate</Button>
+                      <Button size="sm" variant="secondary" onClick={() => shareBadge(b)}>Share</Button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -231,6 +237,7 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
+      <CertificateModal open={certOpen} onOpenChange={setCertOpen} badge={certBadge} userName={displayName} />
     </div>
   );
 }
