@@ -153,21 +153,9 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
       const text = ce.detail?.content?.trim();
       if (!text) return;
       setMessages((prev) => [...prev, { role: "user", content: text }]);
-      try {
-        const { data, error } = await supabase.functions.invoke("profai-chat", {
-          body: { message: text, topic: topicFromText(text), persona },
-        });
-        if (error) throw error;
-        const reply = (data as any)?.reply || generateAssistantReply(text);
-        setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-        if (speaking) speakLesson(reply, personas[persona].voice);
-      } catch (err: any) {
-        console.error("profai-chat playground error:", err);
-        toast({ title: "AI service error", description: err?.message || "Please try again.", variant: "destructive" });
-        const reply = "Sorry, I couldn't generate a response right now.";
-        setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-        if (speaking) speakLesson(reply, personas[persona].voice);
-      }
+      const reply = generateAssistantReply(text);
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      if (speaking) speakLesson(reply, personas[persona].voice);
       toast({ title: "Sent from playground", description: "ProfAI replied in the chat." });
     };
     window.addEventListener("profai:playground-send", handler as EventListener);
@@ -208,23 +196,10 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setInput("");
     setGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("profai-chat", {
-        body: { message: text, topic: currentTopic, persona },
-      });
-      if (error) throw error;
-      const reply = (data as any)?.reply || generateAssistantReply(text);
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-      if (speaking) speakLesson(reply, personas[persona].voice);
-    } catch (err: any) {
-      console.error("profai-chat submit error:", err);
-      toast({ title: "AI service error", description: err?.message || "Please try again.", variant: "destructive" });
-      const reply = "Sorry, I couldn't generate a response right now.";
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-      if (speaking) speakLesson(reply, personas[persona].voice);
-    } finally {
-      setGenerating(false);
-    }
+    const reply = generateAssistantReply(text);
+    setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+    if (speaking) speakLesson(reply, personas[persona].voice);
+    setGenerating(false);
   };
 
   const loadWebRefs = async () => {
@@ -321,21 +296,9 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
                 onClick={async () => {
                   const text = `Teach me ${label.toLowerCase()}.`;
                   setMessages((prev) => [...prev, { role: "user", content: text }]);
-                  try {
-                    const { data, error } = await supabase.functions.invoke("profai-chat", {
-                      body: { message: text, topic: topicFromText(text), persona },
-                    });
-                    if (error) throw error;
-                    const reply = (data as any)?.reply || generateAssistantReply(text);
-                    setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-                    if (speaking) speakLesson(reply, personas[persona].voice);
-                  } catch (err: any) {
-                    console.error("profai-chat quick-topic error:", err);
-                    toast({ title: "AI service error", description: err?.message || "Please try again.", variant: "destructive" });
-                    const reply = "Sorry, I couldn't generate a response right now.";
-                    setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-                    if (speaking) speakLesson(reply, personas[persona].voice);
-                  }
+                  const reply = generateAssistantReply(text);
+                  setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+                  if (speaking) speakLesson(reply, personas[persona].voice);
                 }}
               >
                 {label}

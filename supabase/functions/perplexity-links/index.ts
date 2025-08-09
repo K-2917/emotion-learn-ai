@@ -15,35 +15,49 @@ serve(async (req) => {
     const { topic } = await req.json().catch(() => ({ topic: "" }));
     const q = typeof topic === "string" && topic.trim().length > 0 ? topic : "computer science";
 
-    const prompt = `Return strictly a JSON object with a "links" array of 5 objects: { "title": string, "url": string }.
-The links should be beginner-friendly, reputable, and useful to study ${q}. No commentary, only JSON.`;
+    const prompt = `Return strictly a JSON object with a \"links\" array of 5 objects: { \"title\": string, \"url\": string } for the topic: ${q}.\nRules:\n- Beginner-friendly, reputable sources only\n- Output ONLY JSON (no markdown)\n- Ensure valid URLs`;
 
-    const resp = await fetch("https://api.perplexity.ai/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${Deno.env.get("PERPLEXITY_API_KEY")}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-sonar-small-128k-online",
-        temperature: 0.2,
-        messages: [
-          { role: "system", content: "Be precise. Return only valid JSON per instructions." },
-          { role: "user", content: prompt },
-        ],
-      }),
-    });
+
+    const apiKey = Deno.env.get("GOOGLE_API_KEY");
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: "Missing GOOGLE_API_KEY secret" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: prompt }],
+            },
+          ],
+        }),
+      }
+    );
 
     if (!resp.ok) {
       const errText = await resp.text();
       return new Response(
-        JSON.stringify({ error: "Perplexity API error", detail: errText }),
+        JSON.stringify({ error: "Gemini API error", detail: errText }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const data = await resp.json();
-    let content: string = data?.choices?.[0]?.message?.content || "";
+    let content: string = "";
+    try {
+      const parts = data?.candidates?.[0]?.content?.parts || [];
+      content = parts.map((p: any) => p?.text).filter(Boolean).join("\n");
+    } catch (_) {
+      content = "";
+    }
 
     let parsed: any = null;
     try {
