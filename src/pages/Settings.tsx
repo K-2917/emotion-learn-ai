@@ -55,9 +55,17 @@ export default function Settings() {
       const u = session?.user;
       if (u) {
         setUserId(u.id);
-        const { data } = await supabase.from("profiles").select("display_name, avatar_url").eq("id", u.id).maybeSingle();
-        setDisplayName(data?.display_name || u.email?.split("@")[0] || "");
-        setAvatarUrl(data?.avatar_url || "");
+        const { data, error } = await supabase.from("profiles").select("display_name, avatar_url").eq("id", u.id).maybeSingle();
+        if (!data) {
+          // Ensure profile exists for this user
+          const fallback = u.email?.split("@")[0] || "";
+          await supabase.from("profiles").upsert({ id: u.id, display_name: fallback }).eq("id", u.id);
+          setDisplayName(fallback);
+          setAvatarUrl("");
+        } else {
+          setDisplayName(data.display_name || u.email?.split("@")[0] || "");
+          setAvatarUrl(data.avatar_url || "");
+        }
       }
     })();
   }, []);
@@ -155,7 +163,7 @@ export default function Settings() {
       <h1 className="font-serif text-3xl font-semibold mb-6">Settings</h1>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+        <Card className="animate-fade-in">
           <CardHeader>
             <CardTitle>Account</CardTitle>
           </CardHeader>
