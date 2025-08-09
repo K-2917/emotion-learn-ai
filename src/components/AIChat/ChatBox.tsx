@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { Volume2, Send } from "lucide-react";
 
 const PROFESSOR_SYSTEM_PROMPT = `
-You are ProfAI, a friendly, relatable professor who teaches prompt engineering.
+You are ProfAI, a friendly, relatable professor who teaches AI fundamentals, algorithms, ML concepts, data structures, systems, and practical prompt engineering.
 
 PERSONALITY:
 - Warm, upbeat, and practical; talk like a helpful mentor
@@ -64,6 +64,39 @@ const topicSnippets: Record<string, string> = {
   general: "Example: 'State Role + Task + Constraints + Example for your tech topic in 4-6 lines.'",
 };
 
+const topicResources: Record<string, { title: string; url: string }[]> = {
+  ai: [
+    { title: "Stanford CS221: AI Principles", url: "https://stanford-cs221.github.io/spring2024/" },
+    { title: "Wikipedia: Artificial intelligence", url: "https://en.wikipedia.org/wiki/Artificial_intelligence" },
+    { title: "DeepLearning.AI AI For Everyone", url: "https://www.deeplearning.ai/courses/ai-for-everyone/" },
+  ],
+  algorithms: [
+    { title: "CLRS book companion", url: "https://mitpress.mit.edu/9780262046305/introduction-to-algorithms/" },
+    { title: "VisuAlgo: Visualize Algorithms", url: "https://visualgo.net/en" },
+    { title: "Big-O Cheat Sheet", url: "https://www.bigocheatsheet.com/" },
+  ],
+  ml: [
+    { title: "Scikit-learn Tutorials", url: "https://scikit-learn.org/stable/tutorial/index.html" },
+    { title: "Andrew Ng ML Course", url: "https://www.coursera.org/learn/machine-learning" },
+    { title: "Hands-On ML (O’Reilly)", url: "https://www.oreilly.com/library/view/hands-on-machine-learning/9781492032632/" },
+  ],
+  ds: [
+    { title: "UCSD Data Structures", url: "https://www.coursera.org/specializations/data-structures-algorithms" },
+    { title: "CP-Algorithms (Data Structures)", url: "https://cp-algorithms.com/" },
+    { title: "GeeksforGeeks Data Structures", url: "https://www.geeksforgeeks.org/data-structures/" },
+  ],
+  systems: [
+    { title: "System Design Primer", url: "https://github.com/donnemartin/system-design-primer" },
+    { title: "High Scalability Blog", url: "http://highscalability.com/" },
+    { title: "ByteByteGo Articles", url: "https://blog.bytebytego.com/" },
+  ],
+  general: [
+    { title: "MIT OpenCourseWare", url: "https://ocw.mit.edu/" },
+    { title: "Khan Academy Computer Science", url: "https://www.khanacademy.org/computing/computer-science" },
+    { title: "CS50 2024", url: "https://cs50.harvard.edu/x/2024/" },
+  ],
+};
+
 function speakLesson(text: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const utter = new SpeechSynthesisUtterance(text);
@@ -111,10 +144,15 @@ export default function ChatBox({ demo = false }: { demo?: boolean }) {
     return () => window.removeEventListener("profai:playground-send", handler as EventListener)
   }, [speaking])
 
-  const emotionPrompt = useMemo(() => {
-    const interactions = messages.filter((m) => m.role === "user").length;
-    return interactions > 0 && interactions % 3 === 0;
-  }, [messages]);
+const emotionPrompt = useMemo(() => {
+  const interactions = messages.filter((m) => m.role === "user").length;
+  return interactions > 0 && interactions % 3 === 0;
+}, [messages]);
+
+const currentTopic = useMemo(() => {
+  const lastUser = [...messages].reverse().find((m) => m.role === "user");
+  return lastUser ? topicFromText(lastUser.content) : "general";
+}, [messages]);
 
 const generateAssistantReply = (userText: string) => {
   const mood = detectConfusionLevel(userText);
@@ -217,11 +255,22 @@ const generateAssistantReply = (userText: string) => {
           </div>
         </div>
 
+        <section className="rounded-md border p-3 animate-fade-in">
+          <p className="text-sm mb-2">Resources to explore</p>
+          <ul className="list-disc pl-5 space-y-1">
+            {(topicResources[currentTopic] || topicResources.general).map((r) => (
+              <li key={r.url}>
+                <a href={r.url} target="_blank" rel="noreferrer" className="story-link">{r.title}</a>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         <form onSubmit={onSubmit} className="flex items-center gap-2">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask ProfAI anything about prompts..."
+            placeholder="Ask ProfAI anything across AI, ML, algorithms, data structures, or systems…"
             aria-label="Your message to ProfAI"
           />
           <Button type="submit" aria-label="Send message">
