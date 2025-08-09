@@ -195,6 +195,23 @@ export default function ChatBox({ demo = false, courseTopic }: { demo?: boolean;
     if (!text) return;
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setInput("");
+
+    // Gamification: award "First Prompt" on first chat
+    try {
+      const { awardBadgeIfNew } = await import("@/lib/badges");
+      const res = await awardBadgeIfNew({
+        slug: "first_prompt",
+        name: "First Prompt",
+        description: "You sent your first message to ProfAI!",
+        icon: "🎉",
+      });
+      if (res.awarded) {
+        toast({ title: "Badge earned!", description: "First Prompt badge unlocked." });
+      }
+    } catch (err) {
+      console.warn("Badge award failed", err);
+    }
+
     setGenerating(true);
     const reply = generateAssistantReply(text);
     setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
