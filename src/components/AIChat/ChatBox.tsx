@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { Volume2, Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const PROFESSOR_SYSTEM_PROMPT = `
 You are ProfAI, a friendly, relatable professor who teaches AI fundamentals, algorithms, ML concepts, data structures, systems, and practical prompt engineering.
@@ -119,6 +120,8 @@ export default function ChatBox({ demo = false }: { demo?: boolean }) {
   ]);
   const [input, setInput] = useState("");
   const [speaking, setSpeaking] = useState(true);
+  const [webRefs, setWebRefs] = useState<{ title: string; url: string }[] | null>(null);
+  const [loadingRefs, setLoadingRefs] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -181,6 +184,24 @@ const generateAssistantReply = (userText: string) => {
     setMessages(withReply);
     setInput("");
     if (speaking) speakLesson(reply);
+  };
+
+  const loadWebRefs = async () => {
+    try {
+      setLoadingRefs(true);
+      setWebRefs(null);
+      const { data, error } = await supabase.functions.invoke("perplexity-links", {
+        body: { topic: currentTopic },
+      });
+      if (error) throw error;
+      const links = (data as any)?.links as { title: string; url: string }[] | undefined;
+      if (links && Array.isArray(links)) setWebRefs(links);
+      else throw new Error("No links returned");
+    } catch (err: any) {
+      toast({ title: "Couldn’t fetch web refs", description: err.message || "Try again later", variant: "destructive" });
+    } finally {
+      setLoadingRefs(false);
+    }
   };
 
   return (
@@ -256,7 +277,12 @@ const generateAssistantReply = (userText: string) => {
         </div>
 
         <section className="rounded-md border p-3 animate-fade-in">
-          <p className="text-sm mb-2">Resources to explore</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm">Resources to explore</p>
+            <Button size="sm" variant="secondary" className="hover-scale" onClick={loadWebRefs} disabled={loadingRefs}>
+              {loadingRefs ? "Loading…" : "Get web refs"}
+            </Button>
+          </div>
           <ul className="list-disc pl-5 space-y-1">
             {(topicResources[currentTopic] || topicResources.general).map((r) => (
               <li key={r.url}>
@@ -264,6 +290,18 @@ const generateAssistantReply = (userText: string) => {
               </li>
             ))}
           </ul>
+          {webRefs && webRefs.length > 0 && (
+            <div className="mt-3 animate-fade-in">
+              <p className="text-xs text-muted-foreground mb-1">More from the web</p>
+              <ul className="list-disc pl-5 space-y-1">
+                {webRefs.map((r) => (
+                  <li key={r.url}>
+                    <a href={r.url} target="_blank" rel="noreferrer" className="story-link">{r.title}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
 
         <form onSubmit={onSubmit} className="flex items-center gap-2">

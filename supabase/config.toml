@@ -1,1 +1,4 @@
 project_id = "gtvbnbgskkttvphdjmmb"
+
+[functions.perplexity-links]
+verify_jwt = false
