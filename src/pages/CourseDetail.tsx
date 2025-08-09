@@ -78,6 +78,25 @@ export default function CourseDetail() {
     setLoading(false);
   };
 
+  const handleUnenroll = async () => {
+    setLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const u = session?.user;
+    if (!u) {
+      navigate("/login");
+      setLoading(false);
+      return;
+    }
+    await supabase
+      .from("enrollments")
+      .delete()
+      .eq("user_id", u.id)
+      .eq("course_slug", course.slug);
+    setEnrolled(false);
+    toast({ title: "Unenrolled", description: "You can enroll again anytime." });
+    setLoading(false);
+  };
+
   return (
     <div className="container py-10">
       <Helmet>
@@ -94,9 +113,16 @@ export default function CourseDetail() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-foreground/70 mb-4">{course.description}</p>
-              <Button onClick={handleEnroll} disabled={loading || enrolled}>
-                {enrolled ? "Enrolled" : loading ? "Enrolling…" : "Enroll & Start Lesson"}
-              </Button>
+              {enrolled ? (
+                <div className="flex gap-2">
+                  <Button onClick={() => navigate(`/courses/${course.slug}/lessons`)}>Go to Lessons</Button>
+                  <Button variant="outline" onClick={handleUnenroll} disabled={loading}>Unenroll</Button>
+                </div>
+              ) : (
+                <Button onClick={handleEnroll} disabled={loading}>
+                  {loading ? "Enrolling…" : "Enroll & Start Lesson"}
+                </Button>
+              )}
             </CardContent>
           </Card>
 

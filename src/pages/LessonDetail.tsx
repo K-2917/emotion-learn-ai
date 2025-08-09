@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +26,7 @@ export default function LessonDetail() {
   const { slug, lessonSlug } = useParams();
   const course = courses.find((c) => c.slug === slug);
   const lesson = useMemo(() => (slug ? (lessonsByCourse[slug] || []).find((l) => l.slug === lessonSlug) : undefined), [slug, lessonSlug]);
+  const navigate = useNavigate();
 
   const [prompt, setPrompt] = useState<string>(`Teach me ${lesson?.title || "this topic"} with a beginner-friendly explanation and a JS example.`);
   const [loading, setLoading] = useState(false);
@@ -51,6 +52,15 @@ export default function LessonDetail() {
     } catch (e: any) {
       toast({ title: "Could not generate content", description: e?.message || "Try again", variant: "destructive" });
     } finally { setLoading(false); }
+  };
+
+  const handleUnenroll = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const u = session?.user;
+    if (!u || !slug) { toast({ title: "Log in required", description: "Please log in to manage enrollment.", variant: "destructive" }); return; }
+    await supabase.from("enrollments").delete().eq("user_id", u.id).eq("course_slug", slug);
+    toast({ title: "Unenrolled", description: "Returning to course." });
+    navigate(`/courses/${slug}`);
   };
 
   // Persist and restore progress
@@ -99,8 +109,12 @@ export default function LessonDetail() {
       <article className="grid gap-6 md:grid-cols-3">
         <section className="md:col-span-2 space-y-4">
           <Card className="animate-fade-in">
-            <CardHeader>
+            <CardHeader className="flex items-center justify-between">
               <CardTitle>{lesson.title}</CardTitle>
+              <div className="flex gap-2">
+                <Button asChild variant="secondary"><Link to={`/courses/${slug}/lessons`}>Back to lessons</Link></Button>
+                <Button variant="outline" onClick={handleUnenroll}>Unenroll</Button>
+              </div>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-foreground/70 mb-4">{lesson.description}</p>
